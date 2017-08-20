@@ -11,7 +11,7 @@
 #define NOTE 100
 
 byte morse_buffer[33];
-int  mbp = 0;
+int  morse_buffer_count = 0;
 
 int dot_length;
 int word_space;
@@ -32,10 +32,10 @@ int timepoint()
 
 void push(char c)
 {
-   if (mbp < 31) 
+   if (morse_buffer_count < 31) 
    {
-      morse_buffer[mbp] = c;
-      mbp++; 
+      morse_buffer[morse_buffer_count] = c;
+      morse_buffer_count++; 
    }
 }
 
@@ -89,19 +89,19 @@ boolean readbutton(int button){
 void translate()
 {
   Serial.println((char *) morse_buffer);
-  if (mbp == 1)
+  if (morse_buffer_count == 1)
   {
     if (morse_buffer[0] == '-') type('t');
     else type('e');
   }
-  else if (mbp == 2)
+  else if (morse_buffer_count == 2)
   {
     if ((morse_buffer[0] == '-') && (morse_buffer[1] == '-')) type('m');
     else if ((morse_buffer[0] == '-') && (morse_buffer[1] == '*')) type('n');
     else if ((morse_buffer[0] == '*') && (morse_buffer[1] == '-')) type('a');
     else type('i');
   }
-  else if (mbp == 3)
+  else if (morse_buffer_count == 3)
   {
     if ((morse_buffer[0] == '-') && (morse_buffer[1] == '-') && (morse_buffer[2] == '-')) type('o');
     else if ((morse_buffer[0] == '-') && (morse_buffer[1] == '-') && (morse_buffer[2] == '*')) type('g');
@@ -112,7 +112,7 @@ void translate()
     else if ((morse_buffer[0] == '*') && (morse_buffer[1] == '*') && (morse_buffer[2] == '-')) type('u');
     else type('s');
   }
-  else if (mbp == 4)
+  else if (morse_buffer_count == 4)
   {
      if (morse_buffer[0] == '-')
      {
@@ -134,9 +134,9 @@ void translate()
          else type('v');
      }
   }
-  else if (mbp == 8) mistake();
+  else if (morse_buffer_count == 8) mistake();
 
-  mbp = 0;
+  morse_buffer_count = 0;
   memset(morse_buffer, 0, 32);
   }
 
@@ -162,16 +162,16 @@ void loop(){
   if (dit) 
   {
     tone(SPEAKER,TONE,NOTE);
-    delay(NOTE);
+    delay(NOTE*2);
     push('*');
   } 
   else if (dah)
   {
-    digitalWrite(LED, HIGH);
     tone(SPEAKER,TONE, NOTE*3);
-    delay(NOTE*3);
+    delay(NOTE*4);
     push('-');
-  } else if (mbp > 0)
+  } 
+  else if (morse_buffer_count > 0)
   {
     int gap = timepoint();
     if ((gap > word_space) && (!new_word)) type(' ');
