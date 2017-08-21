@@ -6,7 +6,7 @@
 #define DITLEN A1
 // THRESH is the count before the input pin goes high. I only needed 1.
 #define THRESH 1
-#define TONE 2600
+#define TONE 2800
 #define WPM 18
 #define NOTE 100
 
@@ -22,12 +22,17 @@ unsigned long last_time = millis();
 int word_length = 0;
 int new_word = 0;
 
-int timepoint()
+int timepoint(boolean reset)
 {
-   unsigned long t = millis();
-   int td = (int) (t - last_time);
-   last_time = t;
-   return td;
+  unsigned long t = millis();
+  int td = (int) (t - last_time);
+
+  if (reset) 
+  {
+    last_time = t; 
+  }
+
+  return td;
 }
 
 void push(char c)
@@ -60,6 +65,25 @@ void mistake()
    word_length = 0;
 }
 
+//calc how long the imposed delays would take in typing out what's in the buffer
+int calc_minimum_buffer_time()
+{
+  int i, length = 0;
+  for (i=0; i<morse_buffer_count; i++) 
+  {
+    if (morse_buffer[i] == '-')
+    {
+      length += NOTE*4;
+    } 
+    else if (morse_buffer[i] == '*') 
+    {
+      length += NOTE*2;
+    }
+  }
+
+  return length;
+}
+ 
 boolean readbutton(int button){
   volatile uint8_t* ddr;
   volatile uint8_t* port;
@@ -138,7 +162,7 @@ void translate()
 
   morse_buffer_count = 0;
   memset(morse_buffer, 0, 32);
-  }
+}
 
 void setup (){
   pinMode(DIT, INPUT);
@@ -147,8 +171,11 @@ void setup (){
   pinMode(SPEAKER, OUTPUT);
 
   dot_length = 1200 / WPM;
-  word_space = dot_length * 10;
-  letter_space = dot_length * 3;
+  //word_space = dot_length * 12;
+  //letter_space = dot_length * 5;
+  word_space = 1000;
+  letter_space = 500;
+
 
   memset(morse_buffer, 0, 33);
 }
@@ -173,11 +200,20 @@ void loop(){
   } 
   else if (morse_buffer_count > 0)
   {
-    int gap = timepoint();
-    if ((gap > word_space) && (!new_word)) type(' ');
-    if (gap > letter_space) 
+    int gap = timepoint(false);
+    
+    int min_time = calc_minimum_buffer_time();
+
+    if (gap - min_time > letter_space) 
     { 
       translate();
+      timepoint(true);
+    }
+
+    if ((gap - min_time > word_space) && (!new_word))
+    {
+      type(' ');
+      timepoint(true);
     }
   }
 }
